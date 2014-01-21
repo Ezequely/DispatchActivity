@@ -61,7 +61,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.parse.CountCallback;
 import com.parse.FindCallback;
+import com.parse.GetCallback;
 import com.parse.ParseACL;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
@@ -379,16 +381,30 @@ public class MainActivity extends Activity implements LocationListener,
 						.snippet(result.get(i).getVicinity() + "\n"));
 			}
 			map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+				private String stats;
+
 				@Override
 				public boolean onMarkerClick(final Marker arg0) {
-
+					ParseQuery<ParseObject> query = ParseQuery.getQuery("Favorito");
+					query.whereEqualTo("nome", arg0.getTitle());
+					query.countInBackground(new CountCallback() {
+						  public void done(int count, ParseException e) {
+						    if (e == null) {
+						      // The count request succeeded. Log the count
+						    	Integer status = count;
+								stats = status.toString();
+						    } else {
+						      // The request failed
+						    }
+						  }
+						});
 					if (!(arg0.getTitle().isEmpty())) {
 						new AlertDialog.Builder(MainActivity.this)
 								.setTitle("Informações do Local")
 								.setMessage(
 										"Nome: " + arg0.getTitle()
 												+ "\nEndereço:"
-												+ arg0.getSnippet() + "")
+												+ arg0.getSnippet() + "\nFavoritos:" + stats)
 								.setNeutralButton("Favoritar",
 										new DialogInterface.OnClickListener() {
 											public void onClick(
@@ -405,7 +421,6 @@ public class MainActivity extends Activity implements LocationListener,
 												favorito.put("endereco",
 														arg0.getSnippet());
 												favorito.put("GeoPoint", point);
-												favorito.increment("score");
 												favorito.saveInBackground();
 											}
 										})
